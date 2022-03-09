@@ -11,6 +11,7 @@ error AmountWithdrawnHigherThanExistingBalance();
 error AlreadyAReceiver();
 error ReceiverDoesNotExist();
 error TransferAmountHigherThanBalance();
+error DepositsDisabled();
 
 /// @author nemusona
 /// @title Vibe contract
@@ -29,6 +30,7 @@ contract VibeDeposit {
     /// @notice events
     event Deposit(address indexed _from, uint256 _amount);
     event Withdraw(address indexed _from, uint256 _amount);
+    event ToggleDeposits(address indexed _from, bool _acceptDeposits);
     event BecomeReceiver(address indexed _from);
     event TransferToReceiver(
         address indexed _from,
@@ -56,12 +58,12 @@ contract VibeDeposit {
     }   
 
     /// @notice returns an array of Receivers
-    function getAllReceivers() external view returns(Receiver[] memory){
-        Receiver[] memory result = new Receiver[](receiverArray.length);
+    function getAllReceivers() external view returns(address[] memory, Receiver[] memory){
+        Receiver[] memory r = new Receiver[](receiverArray.length);
         for (uint256 i; i < receiverArray.length; i++) {
-            result[i] = receivers[receiverArray[i]];
+            r[i] = receivers[receiverArray[i]];
         }
-        return result;
+        return (receiverArray, r);
     }
 
     /// @notice deposit function
@@ -93,11 +95,13 @@ contract VibeDeposit {
     function toggleAcceptDeposits() external {
         if(!receivers[msg.sender].valid) revert NotAReceiver();
         receivers[msg.sender].acceptDeposits = !receivers[msg.sender].acceptDeposits;
+        emit ToggleDeposits(msg.sender, receivers[msg.sender].acceptDeposits);
     }
 
     /// @notice depositor transfers token to receiver
     function transferToReceiver(address _receiver, uint256 _amount) external {
         if(!receivers[_receiver].valid) revert ReceiverDoesNotExist();
+        if(!receivers[_receiver].acceptDeposits) revert DepositsDisabled();
         if(depositors[msg.sender] < _amount) revert TransferAmountHigherThanBalance();
         depositors[msg.sender] -= _amount;
         receivers[_receiver].balance += _amount;
