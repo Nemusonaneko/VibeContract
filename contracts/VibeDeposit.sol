@@ -17,7 +17,6 @@ error DepositsDisabled();
 /// @title Vibe contract
 /// Are my ancestors proud of me?
 contract VibeDeposit {
-
     /// @notice using TransferHelper for safe transfers
     using TransferHelper for address;
 
@@ -55,15 +54,21 @@ contract VibeDeposit {
 
     constructor(IERC20 _token) {
         token = _token;
-    }   
+    }
 
     /// @notice returns an array of Receivers
-    function getAllReceivers() external view returns(address[] memory, Receiver[] memory){
-        Receiver[] memory r = new Receiver[](receiverArray.length);
-        for (uint256 i; i < receiverArray.length; i++) {
+    function getAllReceivers() external view returns (Receiver[] memory) {
+        uint256 len = receiverArray.length;
+        Receiver[] memory r = new Receiver[](len);
+        for (uint256 i; i < len; i++) {
             r[i] = receivers[receiverArray[i]];
         }
-        return (receiverArray, r);
+        return r;
+    }
+
+    /// @notice returns all receiver addresses
+    function receiverAddresses() external view returns (address[] memory) {
+        return receiverArray;
     }
 
     /// @notice deposit function
@@ -75,8 +80,9 @@ contract VibeDeposit {
 
     /// @notice withdraw function
     function withdraw(uint256 _amount) external {
-        if(!receivers[msg.sender].valid) revert NotAReceiver();
-        if(receivers[msg.sender].balance < _amount) revert AmountWithdrawnHigherThanExistingBalance();
+        if (!receivers[msg.sender].valid) revert NotAReceiver();
+        if (receivers[msg.sender].balance < _amount)
+            revert AmountWithdrawnHigherThanExistingBalance();
         receivers[msg.sender].balance -= _amount;
         address(token).safeTransferFrom(address(this), msg.sender, _amount);
         emit Withdraw(msg.sender, _amount);
@@ -84,7 +90,7 @@ contract VibeDeposit {
 
     /// @notice can become a receiver with a default secondsPertoken at 10 seconds
     function becomeReceiver() external {
-        if(receivers[msg.sender].valid) revert AlreadyAReceiver();
+        if (receivers[msg.sender].valid) revert AlreadyAReceiver();
         receivers[msg.sender].balance;
         receivers[msg.sender].valid = true;
         receiverArray.push(msg.sender);
@@ -93,19 +99,20 @@ contract VibeDeposit {
 
     /// @notice accept deposits toggle
     function toggleAcceptDeposits() external {
-        if(!receivers[msg.sender].valid) revert NotAReceiver();
-        receivers[msg.sender].acceptDeposits = !receivers[msg.sender].acceptDeposits;
+        if (!receivers[msg.sender].valid) revert NotAReceiver();
+        receivers[msg.sender].acceptDeposits = !receivers[msg.sender]
+            .acceptDeposits;
         emit ToggleDeposits(msg.sender, receivers[msg.sender].acceptDeposits);
     }
 
     /// @notice depositor transfers token to receiver
     function transferToReceiver(address _receiver, uint256 _amount) external {
-        if(!receivers[_receiver].valid) revert ReceiverDoesNotExist();
-        if(!receivers[_receiver].acceptDeposits) revert DepositsDisabled();
-        if(depositors[msg.sender] < _amount) revert TransferAmountHigherThanBalance();
+        if (!receivers[_receiver].valid) revert ReceiverDoesNotExist();
+        if (!receivers[_receiver].acceptDeposits) revert DepositsDisabled();
+        if (depositors[msg.sender] < _amount)
+            revert TransferAmountHigherThanBalance();
         depositors[msg.sender] -= _amount;
         receivers[_receiver].balance += _amount;
         emit TransferToReceiver(msg.sender, _receiver, _amount);
     }
-
 }
