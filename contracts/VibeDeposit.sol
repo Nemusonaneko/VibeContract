@@ -1,7 +1,7 @@
 // contracts/VibeDeposit.sol
 // SPDX-License-Identifier: GNU General Public License v3.0
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./TransferHelper.sol";
